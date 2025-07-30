@@ -1,14 +1,25 @@
 {
   "name": "api-cars",
   "version": "1.0.0",
+  "description": "API REST pour gestion du parc automobile avec Node.js, Express et Sequelize",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "dev": "nodemon app.js",
+    "test": "node test/api-validation.js",
+    "prod": "node app.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "nodejs",
+    "express",
+    "sequelize",
+    "mariadb",
+    "api",
+    "rest",
+    "crud"
+  ],
+  "author": "KOFFI HAMENOU",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "body-parser": "^2.2.0",
     "express": "^5.1.0",
@@ -18,7 +29,14 @@
   },
   "devDependencies": {
     "morgan": "^1.10.1",
-    "nodemon": "^3.1.10",
-    "path": "^0.12.7"
+    "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ehonam/node.git"
   }
 }
