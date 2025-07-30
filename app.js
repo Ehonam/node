@@ -1,106 +1,90 @@
 const express = require('express');
-const app = express();
-const port = 3000;
 const morgan = require('morgan');
-const { Sequelize } = require('sequelize');
 const bodyParser = require('body-parser');
-const { success, getUniqueId } = require('./helper');
 const favicon = require('serve-favicon');
 
-// Configuration Sequelize
-const sequelize = new Sequelize('parc_auto', 'root', '', {
-    host: 'localhost',
-    dialect: 'mariadb',
-    logging: false
-});
+// Import de la configuration Sequelize et fonction d'initialisation
+const { initDb } = require('./src/db/sequelize');
 
-// Instanciation du modèle Car
-const Car = require('./src/models/car')(sequelize);
-
-// Import des données mock
-let cars = require('./src/db/mock-cars');
-
-// Initialisation de la BDD
-const initDb = async () => {
-    try {
-        await sequelize.authenticate();
-        console.log('Connexion réussie à la BDD !');
-
-        await sequelize.sync({ force: true }); 
-        console.log('Modèles synchronisés avec la base de données.');
-
-        await Promise.all(
-            cars.map(async (car) => {
-                const createdCar = await Car.create({
-                    name: car.name,
-                    brand: car.brand,
-                    year: car.year,
-                    image: car.image,
-                    assignedTo: [car.assignedTo],
-                    assignmentDate: car.assignementDate || new Date()
-                });
-                console.log(createdCar.toJSON());
-            })
-        );
-
-        console.log('Données mock insérées dans la BDD.');
-    } catch (error) {
-        console.error('Erreur lors de la connexion ou de la synchronisation :', error);
-    }
-};
-
-initDb();
+const app = express();
+const port = 3000;
 
 // Middlewares
 app.use(favicon(__dirname + '/favicon.ico'));
 app.use(morgan('dev'));
 app.use(bodyParser.json());
 
-// Routes API (encore sur les données mock)
+// Route de base
 app.get('/', (req, res) => {
-    res.send('Hello, Express !');
+    res.json({
+        message: 'Bienvenue sur l\'API de gestion du parc automobile !',
+        version: '1.0.0',
+        endpoints: {
+            cars: {
+                getAll: 'GET /api/cars',
+                getById: 'GET /api/cars/:id',
+                create: 'POST /api/cars',
+                update: 'PUT /api/cars/:id',
+                delete: 'DELETE /api/cars/:id'
+            }
+        }
+    });
 });
 
-app.get('/api/cars', (req, res) => {
-    res.json(cars);
+// Routes API modulaires
+require('./src/routes/findAllCars')(app);
+require('./src/routes/findCarByPk')(app);
+require('./src/routes/createCar')(app);
+require('./src/routes/updateCar')(app);
+require('./src/routes/deleteCar')(app);
+
+// Middleware 404 pour les routes non trouvées
+app.use((req, res) => {
+    res.status(404).json({
+        message: `La route ${req.originalUrl} n'existe pas`,
+        availableRoutes: [
+            'GET /',
+            'GET /api/cars',
+            'GET /api/cars/:id',
+            'POST /api/cars',
+            'PUT /api/cars/:id',
+            'DELETE /api/cars/:id'
+        ]
+    });
 });
 
-app.get('/api/cars/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const car = cars.find(car => car.id === id);
-    const message = "Une voiture a été trouvée";
-    res.json(success(message, car));
+// Middleware de gestion d'erreurs globales
+app.use((err, req, res, next) => {
+    console.error('Erreur globale:', err);
+    res.status(500).json({
+        message: 'Erreur interne du serveur',
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Une erreur s\'est produite'
+    });
 });
 
-app.post('/api/cars', (req, res) => {
-    const id = getUniqueId(cars);
-    const newCar = {
-        ...req.body,
-        id: id,
-        assignementDate: new Date()
-    };
-    cars.push(newCar);
-    const message = `La voiture ${newCar.name} a bien été créée`;
-    res.json(success(message, newCar));
-});
+// Fonction de démarrage du serveur
+const startServer = async () => {
+    try {
+        // Initialisation de la base de données
+        await initDb();
+        
+        // Démarrage du serveur
+        app.listen(port, () => {
+            console.log('🚀 Serveur démarré avec succès !');
+            console.log(`📍 URL: http://localhost:${port}`);
+            console.log('📊 Base de données: connectée et initialisée');
+            console.log('🛣️  Routes API disponibles:');
+            console.log('   GET    /api/cars      - Liste toutes les voitures');
+            console.log('   GET    /api/cars/:id  - Récupère une voiture par ID');
+            console.log('   POST   /api/cars      - Crée une nouvelle voiture');
+            console.log('   PUT    /api/cars/:id  - Met à jour une voiture');
+            console.log('   DELETE /api/cars/:id  - Supprime une voiture');
+        });
+    } catch (error) {
+        console.error('❌ Erreur lors du démarrage du serveur:', error);
+        process.exit(1);
+    }
+};
 
-app.put('/api/cars/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const carUpdated = { ...req.body, id: id };
-    cars = cars.map(car => car.id === id ? carUpdated : car);
-    const message = `La voiture ${carUpdated.name} a bien été modifiée.`;
-    res.json(success(message, carUpdated));
-});
-
-app.delete('/api/cars/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const carDeleted = cars.find(car => car.id === id);
-    cars = cars.filter(car => car.id !== id);
-    const message = `La voiture ${carDeleted.name} a bien été supprimée.`;
-    res.json(success(message, carDeleted));
-});
-
-// Lancement du serveur
-app.listen(port, () =>
-    console.log(`Notre application Node est démarrée sur : http://localhost:${port}`)
-);
+// Démarrage de l'application
+startServer();
