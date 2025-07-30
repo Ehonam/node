@@ -1,50 +1,80 @@
 const { DataTypes } = require('sequelize');
-const {Sequelize} = require('../db/sequelize');
 
-module.exports = (sequelize)=>{
-    return sequelize.define('Car',{
-
-    
-    id :{
-        type : DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement : true
-    },
-    name:{
-        type:DataTypes.STRING,
-        allowNull:false
-    },
-    brand: {
-        type:DataTypes.STRING,
-        allowNull:false
-    },
-    year :{
-        type: DataTypes.INTEGER,
-        allowNull:false
-    },
-    image: {
-        type : DataTypes.STRING,
-        allowNull : false
-    },
-    assignedTo:{
-        type : DataTypes.STRING,
-        allowNull:false,
-        get(){
-            return this.getDataValue('assignedTo').split(',');
+module.exports = (sequelize) => {
+    return sequelize.define('Car', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
         },
-        set(value){
-            this.setDataValue('assignedTo', value.join(','))
+        name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            validate: {
+                notEmpty: {
+                    msg: 'Le nom ne peut pas être vide'
+                }
+            }
+        },
+        brand: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            validate: {
+                notEmpty: {
+                    msg: 'La marque ne peut pas être vide'
+                }
+            }
+        },
+        year: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            validate: {
+                isInt: {
+                    msg: 'L\'année doit être un nombre entier'
+                },
+                min: {
+                    args: [1900],
+                    msg: 'L\'année doit être supérieure à 1900'
+                },
+                max: {
+                    args: [new Date().getFullYear()],
+                    msg: 'L\'année ne peut pas être dans le futur'
+                }
+            }
+        },
+        image: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            validate: {
+                isUrl: {
+                    msg: 'L\'image doit être une URL valide'
+                }
+            }
+        },
+        assignedTo: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            get() {
+                const value = this.getDataValue('assignedTo');
+                return value ? value.split(',') : [];
+            },
+            set(value) {
+                if (Array.isArray(value)) {
+                    this.setDataValue('assignedTo', value.join(','));
+                } else {
+                    this.setDataValue('assignedTo', value);
+                }
+            }
+        },
+        assignmentDate: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW
         }
-    },
-    assignmentDate:{
-        type:DataTypes.DATE,
-        allowNull:false     
-    }
-
-}, {
-    timestamps: true,
-    createdAt:'created',
-    updatedAt:false
-});
+    }, {
+        timestamps: true,
+        createdAt: 'created',
+        updatedAt: false,
+        tableName: 'Cars'
+    });
 };
-
