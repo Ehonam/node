@@ -1,13 +1,6 @@
-exports.success = (message, data) => {
-  return { message, data};
-};
-
-exports.getUniqueId=(cars)=>{
-    const carsIds= cars.map(car => car.id);
-    const maxID = carsIds.reduce((a,b)=>Math.max(a,b));
-    const uniqueId = maxID+1;
-
-    return uniqueId;
-}
-
-
+// Ce fichier a été supprimé car il n'est plus nécessaire.
+// Les fonctionnalités ont été intégrées directement dans les routes Sequelize.
+// 
+// Fonctions supprimées :
+// - success() : remplacée par des objets JSON directement dans les routes
+// - getUniqueId() : remplacée par l'auto-incrémentation de Sequelize
